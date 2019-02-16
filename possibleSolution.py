@@ -35,7 +35,7 @@ def node_dist(n1, n2):
     ''' Distance between nodes n1 and n2, in meters. '''
     dx = (n2.pos[0]-n1.pos[0])*MPERLON
     dy = (n2.pos[1]-n1.pos[1])*MPERLAT
-    return math.sqrt(dx*dx+dy*dy) # in meters
+    return math.sqrt(dx*dx+dy*dy)
  
 class Node():
     ''' Graph (map) node, not a search node! '''
@@ -59,7 +59,6 @@ class Node():
                 self.wayset.add(w.way.name)
             for w in self.wayset:
                 self.waystr += w + " "
-	#	self.waystr += w.encode("utf-8") + " "
         return self.waystr
         
 
@@ -78,7 +77,6 @@ class Edge():
 class Way():
     ''' A way is an entire street, for drawing, not searching. '''
     __slots__ = ('name','type','nodes')
-    # nodes here for ease of drawing only
     def __init__(self,n,t):
         self.name = n
         self.type = t
@@ -110,7 +108,7 @@ class Planner():
         while not q.empty():
             cf, cnode = q.get()
             if cnode == g:
-                print ("Path found, time will be",costs[g]*60/5000) #5 km/hr on flat
+                print ("Path found, time will be",costs[g]*60/5000)
                 return self.make_path(parents,g)
             for edge in cnode.ways:
                 newcost = costs[cnode] + edge.cost
@@ -175,7 +173,7 @@ class PlanWin(Frame):
         ''' Canvas click handler:
         First click sets path start, second sets path goal 
         '''
-        print("Clicked on "+str(event.x)+","+str(event.y)+" last node "+str(self.lastnode))
+        print("You clicked on "+str(event.x)+","+str(event.y)+" last node "+str(self.lastnode))
         if self.lastnode is None:
             return
         if self.startnode is None:
@@ -198,11 +196,11 @@ class PlanWin(Frame):
             
     def plan_path(self):
         ''' Path button callback, plans and then draws path.'''
-        print ("Planning!")
+        print ("Planning now...")
         if self.startnode is None or self.goalnode is None:
-            print ("Sorry, not enough info.")
+            print ("Sorry, there is not enough info.")
             return
-        print ("From", self.startnode.id, "to", self.goalnode.id)
+        print ("You want to go from", self.startnode.id, "to", self.goalnode.id)
         nodes,ways = self.planner.plan(self.startnode, self.goalnode)
         lastway = ""
         for wayname in ways:
@@ -214,7 +212,6 @@ class PlanWin(Frame):
             npos = self.lat_lon_to_pix(node.pos)
             coords.append(npos[0])
             coords.append(npos[1])
-            #print node.id
         self.canvas.coords('path',*coords)
         
     def __init__(self,master,nodes,ways,coastnodes,elevs):
@@ -226,7 +223,7 @@ class PlanWin(Frame):
         self.goalnode = None
         self.planner = Planner(nodes,ways)
         thewin = Frame(master)
-        w = Canvas(thewin, width=WINWID, height=WINHGT)#, cursor="crosshair")
+        w = Canvas(thewin, width=WINWID, height=WINHGT)
         w.bind("<Button-1>", self.mapclick)
         w.bind("<Motion>", self.maphover)
         for waynum in self.ways:
@@ -239,14 +236,7 @@ class PlanWin(Frame):
                 self.whatis[((int)(nextpix[0]),(int)(nextpix[1]))] = nlist[n+1]
                 w.create_line(thispix[0],thispix[1],nextpix[0],nextpix[1])
                 thispix = nextpix
-        #thispix = self.lat_lon_to_pix(self.nodes[coastnodes[0]].pos)
-        # also draw the coast:
-        #for n in range(len(coastnodes)-1):
-        #    nextpix = self.lat_lon_to_pix(self.nodes[coastnodes[n+1]].pos)
-        #    w.create_line(thispix[0],thispix[1],nextpix[0],nextpix[1],fill="blue")
-        #    thispix = nextpix
 
-        # other visible things are hiding for now...
         w.create_line(0,0,0,0,fill='orange',width=3,tag='path')
 
         w.create_oval(0,0,0,0,outline='green',fill='green',tag='startdot')
@@ -283,8 +273,6 @@ def build_elevs(efilename):
     elevs = []
     for spot in range(0,len(estr),2):
         elevs.append(struct.unpack('<h',estr[spot:spot+2])[0])
-    #print(elevs[0], elevs[1], elevs[(int)(len(elevs)/2)], elevs[len(elevs)-1])
-    #print(len(elevs))
     return elevs
 
 def build_graph(elevs):
@@ -309,14 +297,9 @@ def build_graph(elevs):
                 el = 0
             nodes[(int)(item.get('id'))] = Node((int)(item.get('id')),coords,el)            
         elif item.tag == 'way':
-            #if item.get('id') == '157161112': #main coastline way ID
-            #    for thing in item:
-            #        if thing.tag == 'nd':
-            #            coastnodes.append((int)(thing.get('ref')))
-            #    continue
             useme = False
             oneway = False
-            myname = 'unnamed way'
+            myname = 'unnamed way:street name not found in data set'
             for thing in item:
                 if thing.tag == 'tag' and thing.get('k') == 'highway':
                     useme = True
@@ -345,9 +328,7 @@ def build_graph(elevs):
                         nodes[thisn].ways.append(Edge(ways[wayid],nodes[thisn],nodes[nextn]))
                         thisn = nextn                
                 ways[wayid].nodes = nlist
-    #print(len(coastnodes))
-    #print(coastnodes[0])
-    #print(nodes[coastnodes[0]])
+
     return nodes, ways, coastnodes
 
 elevs = build_elevs("elevation.bil")
